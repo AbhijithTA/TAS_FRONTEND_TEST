@@ -1,10 +1,5 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  build: {
-    rollupOptions: {
-      external: ['uuid']
-    }
-  },
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
