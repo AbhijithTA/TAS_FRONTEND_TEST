@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Entire change font */
+/* body {
+  font-family: "Rubik", sans-serif;
+} */
+
+
+
+.scrollingstyle {
+  scrollbar-width: thin;
+  scrollbar-color: darkgray lightgray;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+}
+
+.scrollingNewstyle {
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #5906f3;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1; 
+}
+
+::-webkit-scrollbar-thumb {
+  background: #acacac; 
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555; 
+}
+
+:root {
+  /* Review Panel */
+  --color-LogoText: #387adf;
+  --color-SideBar: #ffffff;
+  --color-NavBar: #ffffff;
+  --color-NavBarText: #336e7b;
+  --color-iconColor: #94390b;
+  --color-iconHover: #fff;
+  --color-sidbarText: #424769;
+  --color-sidbarHead: #050606;
+  --color-background: #3634346b;
+  --color-SelectedNav: #f7f7f744;
+
+  /* Reception panel */
+  --color-ReceptionLogoText: #ee7203;
+  --color-ReceptionSideBar: #f1f2f7;
+  --color-ReceptionNavBar: #f1f2f7;
+  --color-ReceptionNavBarText: #080808;
+  --color-ReceptioniconColor: #374151;
+  --color-ReceptioniconHover: #374151;
+  --color-ReceptionsidbarText: #374151;
+  --color-ReceptionsidbarHead: #374151;
+  --color-Receptionbackground: #ffffff;
+  --color-ReceptionSelectedNav: #cbd5e1;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.rbc-event{
+  width: 80% !important;
+}
+
+
+.rbc-allday-cell {
+  display: none !important;
+}
+
