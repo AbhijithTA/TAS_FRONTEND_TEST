@@ -51,8 +51,7 @@ function Filter({ setFilterOpen,  dropdownData, filterSubmit }) {
       EndAge: "",
       Gender: "",
     },
-    onSubmit: (values) => {
-      console.log(values)
+    onSubmit: (values) => { 
       const formData = { ...values, ...ageRange, ...dateRange };
 
       filterSubmit(formData);

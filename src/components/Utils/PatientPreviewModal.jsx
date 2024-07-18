@@ -7,16 +7,11 @@ import { Button } from "@mui/material";
 import useToast from "../../hooks/useToast";
 import Axios from "../../Config/axios";
 import { useEffect, useMemo, useState } from "react";
-import AWS from "aws-sdk";
+import {s3Client} from "../../Config/aws"
+import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from "uuid"; 
 import CloseIcon from "../../assets/svg/Close";
-
-// Initialize AWS S3
-const s3 = new AWS.S3({
-  accessKeyId:import.meta.env.VITE_S3_ACCESS_KEY_ID ,
-  secretAccessKey:import.meta.VITE_S3_SECRET_ACCESS_KEY,
-  region:import.meta.VITE_S3_REGION,
-});
+ 
 
 const uploadFileToS3 = async (file, phone) => {  
   const params = {
@@ -26,10 +21,12 @@ const uploadFileToS3 = async (file, phone) => {
     ContentType: file.type,
   };
   try {
-    const data = await s3.upload(params).promise(); 
-    return data.Location; // Return the URL of the uploaded file
+    const command = new PutObjectCommand(params);
+    const data = await s3Client.send(command);
+    const fileUrl = `https://${params.Bucket}.s3.${import.meta.env.VITE_S3_REGION}.amazonaws.com/${params.Key}`; 
+    return fileUrl;
   } catch (error) {
-    console.error("Error uploading file to S3:", error);
+    console.error("Error uploading to S3:", error);
     throw error;
   }
 };

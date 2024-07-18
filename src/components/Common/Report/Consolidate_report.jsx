@@ -23,14 +23,12 @@ const ConsolidatedReport = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const openModal = (doctor) => {
-    console.log("Opening modal for doctor:", doctor);
+  const openModal = (doctor) => { 
     setSelectedDoctor(doctor);
     setIsModalOpen(true);
   };
 
-  const closeModal = () => {
-    console.log("Closing modal");
+  const closeModal = () => { 
     setSelectedDoctor(null);
     setIsModalOpen(false);
   };

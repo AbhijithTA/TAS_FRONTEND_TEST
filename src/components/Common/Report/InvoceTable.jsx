@@ -52,8 +52,7 @@ const DataTable = ({
   );
   const printTable = async () => {
     try {
-      const printWindow = window.open("", "_blank");
-      console.log(alldata);
+      const printWindow = window.open("", "_blank"); 
       const tableRows = alldata
         .map(
           (row) => `

@@ -9,14 +9,11 @@ import { formatDate } from "../../../Utils/Datefn";
 import Logo from "../../../assets/Logo/Invoicelogo.png";
 import Invoive_Edit_Modal from "../../Utils/Patient_Invoice_Editmodal";
 import ProgressBar from "../../Utils/ProgressBar/ProgressBar";
+import { v4 as uuidv4 } from "uuid";
 
-import html2pdf from "html2pdf.js";
-import AWS from "aws-sdk";
-const s3 = new AWS.S3({
-  accessKeyId: import.meta.env.VITE_S3_ACCESS_KEY_ID,
-  secretAccessKey: import.meta.env.VITE_S3_SECRET_ACCESS_KEY,
-  region: import.meta.env.VITE_S3_REGION,
-});
+import html2pdf from "html2pdf.js"; 
+import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { s3Client } from '../../../Config/aws';
 
 const InvoiceTable = ({ data, fetchData, loader }) => {
   const [showModal, setShowModal] = useState(false);
@@ -187,16 +184,15 @@ const InvoiceTable = ({ data, fetchData, loader }) => {
       Body: pdfBlob,
       ContentType: "application/pdf",
     };
-    return new Promise((resolve, reject) => {
-      s3.upload(params, (err, data) => {
-        if (err) {
-          console.error("Error uploading to S3:", err);
-          reject(err);
-        } else {
-          resolve(data.Location);
-        }
-      });
-    });
+    try {
+      const command = new PutObjectCommand(params);
+      const data = await s3Client.send(command);
+      const fileUrl = `https://${params.Bucket}.s3.${import.meta.env.VITE_S3_REGION}.amazonaws.com/${params.Key}`; 
+      return fileUrl;
+    } catch (error) {
+      console.error("Error uploading to S3:", error);
+      throw error;
+    }
   };
 
   const sendWhatsapp = (uploadLocation, phoneNumber) => {
@@ -214,8 +210,10 @@ const InvoiceTable = ({ data, fetchData, loader }) => {
       printButtons.forEach((button) => button.classList.add("hidden"));
 
       const pdfBlob = await generatePDFBlob();
+      
       const patientName = selectedRow?.patientID?.Name;
-      const key = `${patientName}.pdf`;
+      const firstName = patientName.split(' ')[0].replace(/\s+/g, '');
+      const key = `${uuidv4()}_${firstName}.pdf`; 
 
       setShowModal(false);
       const toastContainer = document.createElement("div");
@@ -279,7 +277,8 @@ const InvoiceTable = ({ data, fetchData, loader }) => {
 
       const pdfBlob = await generatePDFBlob();
       const patientName = selectedRow?.patientID?.Name;
-      const key = `${patientName}.pdf`;
+      const firstName = patientName.split(' ')[0].replace(/\s+/g, '');
+      const key = `${uuidv4()}_${firstName}.pdf`; 
 
       const showCustomWhatsAppForm = () => {
         setShowModal(false);

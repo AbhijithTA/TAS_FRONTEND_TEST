@@ -11,6 +11,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.614.0",
+    "@aws-sdk/credential-provider-cognito-identity": "^3.614.0",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
     "@fortawesome/fontawesome-free": "^6.5.1",
@@ -27,7 +29,6 @@
     "ag-grid-community": "^32.0.2",
     "ag-grid-enterprise": "^32.0.2",
     "ag-grid-react": "^32.0.2",
-    "aws-sdk": "^2.1643.0",
     "axios": "^1.6.3",
     "chart.js": "^4.4.1",
     "datatables.net": "^1.13.8",
