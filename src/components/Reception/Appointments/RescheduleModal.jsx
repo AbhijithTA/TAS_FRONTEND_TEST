@@ -62,7 +62,7 @@ const RescheduleModal = ({ showModal, setShowModal, event,selectedDates,fetchApp
       const daysInMonth = getDaysInMonth(year, month);
       daysInMonth.forEach(date => {
         const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-        if (event?.doctor_id.schedule?.some(schedule => schedule.day === dayName)) {
+        if (event?.doctor_id?.schedule?.some(schedule => schedule?.day === dayName)) {
           availableDates.push(date);
         }
       });
@@ -101,7 +101,7 @@ const RescheduleModal = ({ showModal, setShowModal, event,selectedDates,fetchApp
 
   const getAvailableTimeSlots = (selectedDate) => {
     const dayName = new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' });
-    const daySchedule = event.doctor_id.schedule.find(schedule => schedule.day === dayName);
+    const daySchedule = event.doctor_id?.schedule.find(schedule => schedule?.day === dayName);
 
     if (daySchedule) {
       return daySchedule.slots.flatMap(slot => generateTimeSlots(slot.start, slot.end));

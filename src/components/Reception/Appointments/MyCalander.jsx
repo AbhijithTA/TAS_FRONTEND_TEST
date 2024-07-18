@@ -63,10 +63,10 @@ const MyCalander = () => {
 
       const matchDoctor = (id) => {
         const doctor = data.doctors.find((doc) => doc._id === id);
-        return doctor ? doctor.name : "Unknown";
+        return doctor ? doctor?.name : "Unknown";
       };
 
-      const updatedEvents = data.appointments.map((appointment) => ({
+      const updatedEvents = data.appointments?.map((appointment) => ({
         title: appointment.patient?.name,
         start: moment(appointment?.date_time).toDate(),
         end: moment(appointment?.date_time).add(15, "minutes").toDate(),
