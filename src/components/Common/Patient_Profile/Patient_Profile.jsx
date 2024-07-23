@@ -1,75 +1,77 @@
-/* eslint-disable react/prop-types */
-
-import   { useEffect, useState, useCallback, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
+// PatientProfile.js
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { Link, useNavigate, Outlet, useParams } from "react-router-dom";
 import Axios from "../../../Config/axios";
-import { IoIosArrowForward, IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
-import { TextField,CircularProgress  } from '@mui/material';
+import {
+  IoIosArrowForward,
+  IoIosArrowDown,
+  IoIosArrowUp,
+} from "react-icons/io";
+import { TextField, CircularProgress } from "@mui/material";
 import man from "../../../assets/Gender/man.png";
 import woman from "../../../assets/Gender/woman.png";
 import calendar from "../../../assets/Patientprofile/calendar.png";
 import doctors from "../../../assets/Patientprofile/doctors.png";
+import calendarNew from "../../../assets/Patientprofile/calendarNew.png";
+import invoices from "../../../assets/Patientprofile/invoices.png";
+import clinicalNotes from "../../../assets/Patientprofile/clinicalNotes.png";
+import paymentCredits from "../../../assets/Patientprofile/paymentCredits.png";
+import consentForms from "../../../assets/Patientprofile/consentForms.png";
 import treatment from "../../../assets/Patientprofile/treatment.png";
 import test from "../../../assets/Patientprofile/test.png";
-import pencil from "../../../assets/Patientprofile/pencil.png";
 import consent from "../../../assets/Patientprofile/consent.png";
 import EditPatientModal from "./../../Admin/Patients/patientPreview";
-import AppointmentsModal from "./Appointments_Modal";
-import ClinicalNoteForm from "./Clinical_Note_Form";
-import { toast } from 'react-toastify';
-import Swal from 'sweetalert2';
+import AppointmentsModal from "./components/Appointments_Modal";
+import ClinicalNoteForm from "./components/Clinical_Note_Form";
+import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 import { FiEdit } from "react-icons/fi";
 import { AiFillDelete } from "react-icons/ai";
+import { PatientProvider } from "../../../hooks/PatientContext";
+import { FaPhoneAlt, FaEnvelope, FaMapMarkerAlt, FaCity } from "react-icons/fa";
 
 const APPOINTMENT_LIMIT = 10;
-const INITIAL_FORM_DATA = {
-  date: "",
-  chiefComplaint: "",
-  historyOfPresentingIllness: "",
-  pastMedicalHistory: "",
-  notes: "",
-  allergies: "",
-};
-
+// icon: calendar,
 const TITLES = [
   {
     title: "Appointments",
-    icon: calendar,
-    link: `/review-panel/Patient-Appointment/`,
+    icon: calendarNew,
+    link: "appointments",
   },
   {
     title: "Invoices",
-    icon: doctors,
-    link: `/review-panel/Patient-Invoices/`,
+    icon: invoices,
+    link: "invoices",
   },
-  { title: "Clinical Notes", icon: treatment },
-  { title: "Payment Credits", icon: test },
-  { title: "Consent Forms", icon: consent },
+  { title: "Clinical Notes", icon: clinicalNotes, link: "clinicalNotes" },
+  { title: "Payment Credits", icon: paymentCredits, link: "paymentCredits" },
+  { title: "Consent Forms", icon: consentForms, link: "consentForms" },
 ];
 
-const PatientProfile = ({id,BranchID}) => {
+const PatientProfile = ({ BranchID }) => {
+  const { id } = useParams();
   const [modalOpen, setModalOpen] = useState(false);
-  const [appointmentsModalOpen, setAppointmentsModalOpen] = useState(false);
+
   const [patient, setPatient] = useState(null);
-  const [appointments, setAppointments] = useState([]); 
+  const [appointments, setAppointments] = useState([]);
   const [openGeneralInfo, setOpenGeneralInfo] = useState(true);
-  const [editingIndex, setEditingIndex] = useState(null);
-  const [editData, setEditData] = useState({});
-  const [modalIsOpen, setModalIsOpen] = useState(false);
-  const [clinicalModelForm, setClinicalModelForm] = useState(false);
-  const [visibleSections, setVisibleSections] = useState({});
+
   const [clinicalHistory, setClinicalHistory] = useState([]);
-  const [formData, setFormData] = useState(INITIAL_FORM_DATA);
+
   const [loading, setLoading] = useState(true);
+  const [invoiceData, setInvoiceData] = useState([]);
+  const [patientCredit, setPatientCredit] = useState([]);
 
-  const jobRole = localStorage.getItem("jobRole"); 
-  const navigate = useNavigate()
-
+  const jobRole = localStorage.getItem("jobRole");
+  const navigate = useNavigate();
 
   const fetchPatientDetails = useCallback(async () => {
     try {
       const response = await Axios.get(`/patient-profile/${id}`);
       setPatient(response.data.patient);
+      setInvoiceData(response.data.aggregatedResult.invoiceDetails);
+      setPatientCredit(response.data.aggregatedResult.PatientCredit);
+
       setLoading(false);
     } catch (error) {
       console.error("Error fetching patient details:", error);
@@ -79,7 +81,9 @@ const PatientProfile = ({id,BranchID}) => {
   const fetchClinicalNotes = useCallback(async () => {
     try {
       if (patient) {
-        const response = await Axios.get(`/doctor/get-clinicalNote/${patient._id}`);
+        const response = await Axios.get(
+          `/doctor/get-clinicalNote/${patient._id}`
+        );
         setClinicalHistory(response.data);
       }
     } catch (error) {
@@ -111,99 +115,32 @@ const PatientProfile = ({id,BranchID}) => {
     }
   }, [patient, fetchClinicalNotes, fetchAppointments]);
 
-  const toggleSection = (index) => {
-    setVisibleSections((prevState) => ({
-      ...prevState,
-      [index]: !prevState[index],
-    }));
-  };
-
-  const handleEditClick = (index, item) => {
-    setEditingIndex(index);
-    setEditData({ ...item });
-    setModalIsOpen(true);
-  };
-
-  const handleDeleteClick = async (index, item) => {
-    Swal.fire({
-      title: 'Are you sure?',
-      text: "You won't be able to revert this!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes, delete it!'
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          await Axios.delete(`/doctor/delete-clinicalNote/${patient?._id}`, { data: { clinicalNoteId: item?._id } });
-          fetchClinicalNotes(); // Automatically update data
-          Swal.fire(
-            'Deleted!',
-            'Your clinical note has been deleted.',
-            'success'
-          );
-        } catch (err) {
-          toast.error('Failed to delete clinical note');
-          console.error('Error deleting clinical note:', err);
-        }
-      }
-    });
-  };
-
-  const handleSaveClick = async () => {
-    try {
-      await Axios.put(`/doctor/edit-clinicalNote/${patient?._id}`, { clinicalNoteId: editData?._id, updatedNote: editData });
-      toast.success("Clinical Note updated successfully");
-      fetchClinicalNotes(); // Automatically update data
-      setModalIsOpen(false);
-      setEditingIndex(null);
-    } catch (error) {
-      console.log(error);
-      toast.error(error.response.data.message);
-    }
-  };
-
-  const handleChange = (field, value) => {
-    setEditData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const handleFormSubmit = async (formdata) => {
-    try {
-      const data = [formdata];
-      await Axios.post(`/doctor/add-clinicalNote/${patient?._id}`, { data });
-      toast.success("Clinical Note added successfully");
-      setClinicalModelForm(false);
-      fetchClinicalNotes(); // Automatically update data
-    } catch (error) {
-      console.log(error);
-      toast.error(error.response.data.message);
-    }
-  };
-
   const toggleGeneralInfo = () => {
     setOpenGeneralInfo(!openGeneralInfo);
   };
 
   const filteredAppointments = useMemo(() => {
-    return appointments.filter(app => app.patient_obj_id === id);
+    return appointments.filter((app) => app.patient_obj_id === id);
   }, [appointments, id]);
 
   const limitedScheduledAppointments = useMemo(() => {
-    return filteredAppointments.filter(app => app.status === "scheduled").slice(0, APPOINTMENT_LIMIT);
+    return filteredAppointments
+      .filter((app) => app.status === "scheduled")
+      .slice(0, APPOINTMENT_LIMIT);
   }, [filteredAppointments]);
 
   const limitedPastAppointments = useMemo(() => {
-    return filteredAppointments.filter(app => app.status === "completed" || app.status === "canceled").slice(0, APPOINTMENT_LIMIT);
+    return filteredAppointments
+      .filter((app) => app.status === "completed" || app.status === "canceled")
+      .slice(0, APPOINTMENT_LIMIT);
   }, [filteredAppointments]);
 
   return (
     <div className="w-full h-full flex flex-col lg:flex-row bg-gray-100">
       {loading ? (
-        <div className="flex justify-center items-center w-full h-full"><CircularProgress /></div>
+        <div className="flex justify-center items-center w-full h-full">
+          <CircularProgress />
+        </div>
       ) : (
         <>
           {/* Sidebar */}
@@ -222,19 +159,65 @@ const PatientProfile = ({id,BranchID}) => {
               </div>
             </div>
             <div className="flex items-center justify-between mb-6">
-              <button className="bg-blue-600 text-white px-4 py-2 rounded-lg mr-4" onClick={()=>{
-              navigate(`/patient-invoice/?BranchID=${BranchID}&PatientID=${id}`)
-              }}>
+              <button
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg mr-4"
+                onClick={() => {
+                  navigate(
+                    `/patient-invoice/?BranchID=${BranchID}&PatientID=${id}`
+                  );
+                }}
+              >
                 Generate Invoice
               </button>
-              {/* <img
-                src={pencil}
-                alt="edit icon"
-                className="w-6 h-6 cursor-pointer"
-                onClick={() => setModalOpen(true)}
-              /> */}
+              <button onClick={() => setModalOpen(true)}>
+                <svg
+                  clip-rule="evenodd"
+                  fill-rule="evenodd"
+                  height="50"
+                  image-rendering="optimizeQuality"
+                  shape-rendering="geometricPrecision"
+                  text-rendering="geometricPrecision"
+                  viewBox="0 0 6.66666 6.66666"
+                  width="50"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <g id="Layer_x0020_1">
+                    <circle cx="3.333" cy="3.333" fill="#b3e5fc" r="3.227" />
+                    <g fill="#212121" fill-rule="nonzero">
+                      <path d="m5.5638.981654.120673.120677.00000787.00000787c.139228.139228.208843.322665.208843.506039 0 .18337-.0696142.366807-.208843.506035l-.00000787.00000787-3.2577 3.2577.00000394.00000394c-.0104409.0104409-.0230472.0173898-.036378.0208504l-1.51215.496748.00004724.00014173c-.0419724.0137874-.087185-.00906299-.100972-.0510354-.0060748-.0185-.0050315-.037626.00162598-.0544173l.495681-1.51319.075937.024689-.0760236-.0249055c.00422441-.0129016.0114252-.0239961.0205827-.0327795l3.25658-3.25658c.139232-.139232.322673-.20885.506047-.20885s.366815.0696181.506047.20885zm.00754724.233803-.120673-.120677c-.10798-.10798-.250425-.161976-.392921-.161976s-.284941.0539961-.392921.161976l-3.24442 3.24442-.442079 1.34955 1.34857-.443012 3.24444-3.24444.00000787-.00000787c.107976-.107976.161969-.250417.161969-.392909 0-.142496-.0539921-.284937-.161969-.392913l-.00000787-.00000787z" />
+                      <path d="m1.45527 4.19122c-.0312362-.0312362-.0818898-.0312362-.113126 0s-.0312362.0818898 0 .113126l1.01964 1.01964c.0312362.0312362.0818898.0312362.113126 0s.0312362-.0818898 0-.113126z" />
+                      <path d="m4.41438 1.23211c-.0312362-.0312362-.0818898-.0312362-.113126 0s-.0312362.0818898 0 .113126l1.01964 1.01964c.0312362.0312362.0818898.0312362.113126 0s.0312362-.0818898 0-.113126z" />
+                      <path d="m4.30383 2.11491c.0312362-.0312362.0312362-.0818898 0-.113126s-.0818898-.0312362-.113126 0l-2.0789 2.0789c-.0312362.0312362-.0312362.0818898 0 .113126s.0818898.0312362.113126 0z" />
+                      <path d="m4.66435 2.47542c.0312362-.0312362.0312362-.0818898 0-.113126s-.0818898-.0312362-.113126 0l-2.0789 2.0789c-.0312362.0312362-.0312362.0818898 0 .113126s.0818898.0312362.113126 0z" />
+                      <path d="m1.50868 5.68263-.630429.207098.00004724.00014173c-.0419724.0137874-.087185-.00906299-.100972-.0510354-.0060748-.0185-.0050315-.037626.00162598-.0544173l.20665-.63085.075937.024689-.0760236-.0249055c.013752-.0419843.0589449-.0648701.100929-.0511181.0129016.00422441.0239961.0114252.0327795.0205827l.425835.425835.00000394-.00000394c.0312402.0312402.0312402.0818937 0 .113134-.0104409.0104409-.0230512.0173898-.0363819.0208504zm-.530343.00612205.36174-.118831-.243161-.243161z" />
+                    </g>
+                    <path
+                      d="m4.47094 1.2886687.906516.906516.193902-.193902c.107976-.107976.161969-.250417.161969-.392909 0-.142496-.0539921-.284937-.161976-.392921l-.120673-.120677c-.10798-.10798-.250425-.161976-.392921-.161976s-.284941.0539961-.392921.161976l-.193894.193894z"
+                      fill="#ef5350"
+                    />
+                    <path
+                      d="m5.26433 2.30831-.906516-.906516-2.84599 2.84599.906516.906516zm-.713106.0539803c.0312362-.0312362.0818898-.0312362.113126 0s.0312362.0818898 0 .113126l-2.0789 2.0789c-.0312362.0312362-.0818898.0312362-.113126 0s-.0312362-.0818898 0-.113126zm-.24739-.360512c.0312362.0312362.0312362.0818898 0 .113126l-2.0789 2.0789c-.0312362.0312362-.0818898.0312362-.113126 0s-.0312362-.0818898 0-.113126l2.0789-2.0789c.0312362-.0312362.0818898-.0312362.113126 0z"
+                      fill="#ffee58"
+                    />
+                    <path
+                      d="m2.29426 5.25646-.88456-.88455-.25696.78442.35764.35764z"
+                      fill="#ffcc80"
+                    />
+                    <path
+                      d="m1.34008 5.56992-.24316-.24316-.118581.36199z"
+                      fill="#616161"
+                    />
+                    <path
+                      d="m5.06796 1.88569.239594-.894177c-.0782402-.0391378-.164008-.0587087-.249795-.0587087-.142496 0-.284941.0539961-.392921.161976l-.193894.193894.597016.597016z"
+                      fill="#c24441"
+                    />
+                  </g>
+                </svg>
+              </button>
             </div>
-            {modalOpen && <EditPatientModal onClose={() => setModalOpen(false)} />}
+            {modalOpen && (
+              <EditPatientModal onClose={() => setModalOpen(false)} />
+            )}
             {/* Redirection Links */}
             <div className="space-y-4 mb-7">
               {TITLES.map((titleItem, index) => (
@@ -245,20 +228,14 @@ const PatientProfile = ({id,BranchID}) => {
                   <img
                     src={titleItem.icon}
                     alt={titleItem.title}
-                    className="w-6 h-6"
+                    className="w-12 h-12 rounded-full"
                   />
-                  {titleItem.link ? (
-                    <Link
-                      // to={titleItem.link}
-                      className="text-gray-700 font-semibold"
-                    >
-                      {titleItem.title}
-                    </Link>
-                  ) : (
-                    <span className="text-gray-700 font-semibold">
-                      {titleItem.title}
-                    </span>
-                  )}
+                  <Link
+                    to={titleItem.link}
+                    className="text-gray-700 font-semibold"
+                  >
+                    {titleItem.title}
+                  </Link>
                   <IoIosArrowForward className="text-gray-400 ml-auto" />
                 </div>
               ))}
@@ -277,309 +254,62 @@ const PatientProfile = ({id,BranchID}) => {
                 />
               </div>
               {openGeneralInfo && (
-                <div className="text-gray-700 my-3">
-                  <p>
-                    <strong>Phone:</strong> {patient?.phone}
-                  </p>
-                  <p>
-                    <strong>Email:</strong>{" "}
-                    {patient?.email ? patient.email : "Not Provided"}
-                  </p>
-                  <p>
-                    <strong>Address:</strong> {patient?.address?.address}
-                  </p>
-                  <p>
-                    <strong>City:</strong> {patient?.address?.city}
-                  </p>
+                <div className="bg-white p-4 mt-2 rounded-lg ">
+                  <div className="text-gray-700 space-y-3">
+                    <div className="flex items-center">
+                      <FaPhoneAlt className="text-gray-500 mr-2" />
+                      <p>
+                        <strong>Phone:</strong> {patient?.phone}
+                      </p>
+                    </div>
+                    <div className="flex items-center">
+                      <FaEnvelope className="text-gray-500 mr-2" />
+                      <p>
+                        <strong>Email:</strong>{" "}
+                        {patient?.email ? patient.email : "Not Provided"}
+                      </p>
+                    </div>
+                    <div className="flex items-center">
+                      <FaMapMarkerAlt className="text-gray-500 mr-2" />
+                      <p>
+                        <strong>Address:</strong> {patient?.address?.address}
+                      </p>
+                    </div>
+                    <div className="flex items-center">
+                      <FaCity className="text-gray-500 mr-2" />
+                      <p>
+                        <strong>City:</strong> {patient?.address?.city}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
           {/* Main Content */}
-          <div className="w-full lg:w-3/4 flex flex-col shadow-md  md:mx-4 md:my-4 ">
-            {/* Appointments Section */}
-            <div className="p-6 bg-white">
-              <h1 className="text-2xl font-semibold mb-4">Appointments</h1>
-              <div className="space-y-4">
-                <div>
-                  <h2 className="font-semibold uppercase text-gray-600 my-1">
-                    Scheduled
-                  </h2>
-                  <div className="h-[6rem] overflow-x-auto">
-                    {limitedScheduledAppointments.length > 0 ? (
-                      limitedScheduledAppointments.map((appointment, index) => (
-                        <div
-                          key={index}
-                          className="p-4 bg-gray-200 rounded-lg mb-2 text-sm"
-                        >
-                          <h2 className="font-semibold">
-                            {appointment.doctor_id?.name}
-                          </h2>
-                          <p className="font-semibold">
-                            {appointment.procedure_id?.procedure}
-                          </p>
-                          <p className="font-semibold">{appointment.status}</p>
-                          <p>{new Date(appointment.date_time).toLocaleString()}</p>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-4 bg-gray-100 rounded-lg">
-                        <p>No Scheduled Appointments</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <h2 className="font-semibold uppercase text-gray-600 my-1">
-                    Past Appointments
-                  </h2>
-                  <div className="h-[6rem] overflow-x-auto">
-                    {limitedPastAppointments.length > 0 ? (
-                      limitedPastAppointments.map((appointment, index) => (
-                        <div
-                          key={index}
-                          className={`p-4 rounded-lg mb-2 text-sm ${
-                            appointment.status === "canceled"
-                              ? "bg-[#F8E5F4]"
-                              : "bg-[#e5f8ea]"
-                          }`}
-                        >
-                          <div>
-                            <h2 className="font-semibold">
-                              {appointment.doctor_id.name}
-                            </h2>
-                            <p className="font-semibold">
-                              {appointment.procedure_id?.procedure}
-                            </p>
-                            <p>
-                              {new Date(appointment.date_time).toLocaleString()}
-                            </p>
-                            <p>
-                              Status:{" "}
-                              {appointment.status.charAt(0).toUpperCase() +
-                                appointment.status.slice(1)}
-                            </p>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-4 bg-[#F8E5F4] rounded-lg">
-                        <p>No Past Appointments</p>
-                      </div>
-                    )}
-                  </div>
-                    <Link
-                      to="#"
-                      className="text-blue-600 block"
-                      onClick={() => setAppointmentsModalOpen(true)}
-                    >
-                  <div className="flex w-[6rem] items-center my-1 font-semibold ">
-                      See More
-                    <IoIosArrowDown className="text-gray-600 ml-auto font-semibold" />
-                  </div>
-                    </Link>
-                </div>
-              </div>
+          <PatientProvider
+            value={{
+              appointments,
+              id,
+              invoiceData,
+              jobRole,
+              clinicalHistory,
+              patientCredit,
+            }}
+          >
+            <div className="w-full lg:w-3/4 flex flex-col shadow-md  md:mx-4 md:my-4 ">
+              <Outlet />
             </div>
-            {/* Clinical history */}
-            <div className="p-6 bg-white mt-4 w-full shadow-md rounded-md h-[22rem] overflow-x-auto">
-              <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-semibold">Clinical History</h1>
-                {(jobRole === 'doctor') && <h1
-                  className="text-sm font-semibold"
-                  onClick={() => setClinicalModelForm(true)}
-                >
-                  {" "}
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    className="w-6 h-10 inline-block mr-1 cursor-pointer hover:text-blue-600"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                </h1>}
-              </div>
-              {/* listing history */}
-              <div>
-                {clinicalHistory.length === 0 ? (
-                  <p className="text-center text-gray-600 font-bold my-10">No history found</p>
-                ) : null}
-              
-                {clinicalHistory.map((item, index) => (
-                  <div
-                    key={index}
-                    className="p-2 mb-4 border rounded my-7 bg-[#fceded]"
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-md  uppercase">
-                          <strong >Chief Complaint:</strong> {item.chiefComplaint}
-                        </p>
-                        <p>
-                          <strong>Date:</strong> {new Date(item.date).toLocaleDateString()} 
-                        </p>
-                      </div>
-                      <div className="flex items-center justify-between gap-7 ">
-                        { (jobRole === 'doctor') && visibleSections[index] && (
-                         <>
-                          <p
-                            className="cursor-pointer capitalize text-sm hover:underline hover:text-blue-600 text-gray-600"
-                            onClick={() => handleEditClick(index, item)}
-                          >
-                            <FiEdit/>
-                          </p>
-                          <p
-                            className="cursor-pointer capitalize text-sm hover:underline hover:text-red-600 text-gray-600"
-                            onClick={() => handleDeleteClick(index, item)}
-                          >
-                            <AiFillDelete/>
-                          </p>
-                         </>
-                          
-                        )}
-                        <p
-                          className="cursor-pointer"
-                          onClick={() => {
-                            toggleSection(index);
-                            setEditingIndex(null);
-                          }}
-                        >
-                          {visibleSections[index] ? (
-                            <IoIosArrowUp />
-                          ) : (
-                            <IoIosArrowDown />
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                    {visibleSections[index] && (
-                      <div className="my-2 uppercase text-sm">
-                        <p>
-                          <strong>History of Presenting Illness:</strong>{" "}
-                          {item.historyOfPresentingIllness}
-                        </p>
-                        <p>
-                          <strong>Past Medical History:</strong>{" "}
-                          {item.pastMedicalHistory}
-                        </p>
-                        <p>
-                          <strong>Notes:</strong> {item.notes}
-                        </p>
-                        <p>
-                          <strong>Allergies:</strong> {item.allergies}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          {/* Clinical Note Form */}
-          <ClinicalNoteForm
-            isOpen={clinicalModelForm}
-            onClose={() => setClinicalModelForm(false)}
-            formData={formData}
-            setFormData={setFormData}
-            onSubmit={handleFormSubmit}
-          />
-
-          <AppointmentsModal
-            isOpen={appointmentsModalOpen}
-            onClose={() => setAppointmentsModalOpen(false)}
-            appointments={filteredAppointments}
-          />
-
-          {/* clinical history edit modal */}
-          {modalIsOpen && (
-            <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
-              <div className="bg-white p-4 rounded shadow-lg w-1/3">
-                <div className="flex justify-between">
-                <h1>Edit Clinical History</h1>
-                  <button onClick={() => setModalIsOpen(false)} className="text-xl">
-                    &times;
-                  </button>
-                </div>
-                <div className="my-4 flex flex-col gap-4">
-                  <p>
-                    <TextField
-                      label="Chief Complaint"
-                      type="text"
-                      value={editData.chiefComplaint}
-                      onChange={(e) =>
-                        handleChange("chiefComplaint", e.target.value)
-                      }
-                      className="border p-2 mb-2 w-full"
-                    />
-                  </p>
-                  <p>
-                    <TextField
-                      label="Date"
-                      type="date"
-                      value={editData.date}
-                      onChange={(e) => handleChange("date", e.target.value)}
-                      className="border p-2 mb-2 w-full"
-                    />
-                  </p>
-                  <p>
-                    <TextField
-                      label="History of Presenting Illness"
-                      type="text"
-                      value={editData.historyOfPresentingIllness}
-                      onChange={(e) =>
-                        handleChange("historyOfPresentingIllness", e.target.value)
-                      }
-                      className="border p-2 mb-2 w-full"
-                    />
-                  </p>
-                  <p>
-                    <TextField
-                      label="Past Medical History"
-                      type="text"
-                      value={editData.pastMedicalHistory}
-                      onChange={(e) =>
-                        handleChange("pastMedicalHistory", e.target.value)
-                      }
-                      className="border p-2 mb-2 w-full"
-                    />
-                  </p>
-                  <p>
-                    <TextField
-                      label="Notes"
-                      type="text"
-                      value={editData.notes}
-                      onChange={(e) => handleChange("notes", e.target.value)}
-                      className="border p-4 mb-2 w-full"
-                    />
-                  </p>
-                  <p>
-                    <TextField
-                      label="Allergies"
-                      type="text"
-                      value={editData.allergies}
-                      onChange={(e) => handleChange("allergies", e.target.value)}
-                      className="border p-2 mb-2 w-full"
-                    />
-                  </p>
-                  <button
-                    onClick={handleSaveClick}
-                    className="bg-blue-500 text-white px-4 py-2 rounded"
-                  >
-                    Update
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          </PatientProvider>
         </>
+      )}
+      {modalOpen && (
+        <EditPatientModal
+          showModal={modalOpen}
+          data={patient}
+          setShowModal={setModalOpen}
+        />
       )}
     </div>
   );
